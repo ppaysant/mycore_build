@@ -18,7 +18,7 @@ Script generate an output folder and a tarball. Tarball can use like official ow
 
 ## Usage
 
-
+Syntax : ./mycore_build.sh <my_conf>.conf <outputfolder>
 
 ## Configuration examples
 
