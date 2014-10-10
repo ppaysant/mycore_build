@@ -1,6 +1,11 @@
 # My CoRe build
 
-Bash script to generate mycore tarball from various sources.
+A bash script to generate mycore tarball from various sources. 
+Current supported repository :
+* GitHub
+* Subversion
+* Apps.owncloud.com
+* Local folder
 
 
 
