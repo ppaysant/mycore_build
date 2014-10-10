@@ -18,7 +18,9 @@ Script generate an output folder and a tarball. Tarball can use like official ow
 
 ## Usage
 
-Syntax : ./mycore_build.sh \<my_conf\>.conf <outputfolder>
+Syntax : ./mycore_build.sh \<my_conf\>.conf \<outputfolder\>
+
+Actually, we recommand use only relative path. 
 
 ## Configuration examples
 
