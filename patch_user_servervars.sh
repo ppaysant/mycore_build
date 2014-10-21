@@ -11,7 +11,6 @@
 	\"separator\": \"@\", 
 	\"mapping\": {
 		\"ou\":\"grp\", 
-		\"o\" :\"org\",
 		\"dr\": \"dr\" 
 	}
 }"
