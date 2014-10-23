@@ -9,6 +9,8 @@
 	# Dossier de sortie ainsi que le nom du tar.gz
 		output_folder=$2
 		current_folder=`/bin/pwd`
+        # Version PROD ou TEST
+                environment=$3
 
 #
 # Checks
@@ -17,7 +19,7 @@
         if [[ $output_folder == "" || $conf_file == "" ]]
         then
                 echo "Vous devez spécifier un fichier de configuration et un repertoire de sortie"
-                echo "Usage : ./owncore_build.sh <conf_file> <output_folder> "
+                echo "Usage : ./owncore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
                 exit
         fi
 
@@ -25,8 +27,27 @@
         if [[ -d $output_folder ]]
         then
                 echo "Le dossier $output_folder existe deja !"
-                echo "Usage : ./owncore_build.sh <conf_file> <output_folder> "
+                echo "Usage : ./owncore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
                 exit
+        fi
+
+        # Verif dossier destination
+        if [[ $environment != "" ]]
+        then
+	        if [[ $environment == "PRODUCTION" || $environment == "TEST" ]]
+        	then
+			echo "[INFO] Paramètres OK"
+		else
+                	echo "Vous devez spécifier un mode cible, PRODUCTION (sans fichiers git/svn) ou TEST (avec git/svn)"
+                	echo "Usage : ./owncore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
+                	exit
+		fi
+	else
+		        if [[ $environment == "" ]]
+        		then
+				echo "[INFO] Paramètre environement non renseigné, par défaut valorisé à PRODUCTION"
+				environment="PRODUCTION"
+			fi
         fi
 
 #
@@ -79,19 +100,22 @@
 				cd $current_folder
 			fi
 
-			# On supprime les metadatas de github
-                        printf "removeGit $getSource_target/.git* ... "
-                        debug=`/bin/rm -rf $getSource_target/.git* 2>&1`
-                        if [[ $? -ge "1" ]]
+                        if [[ $environment == "PRODUCTION" ]]
                         then
-                                # Cmd fail
-                                echo "FAIL"
-                                echo $debug
-                                exit
-                        else
-                                # Cmd OK
-                                echo "OK"
-                        fi
+				# On supprime les metadatas de github
+        	                printf "removeGit $getSource_target/.git* ... "
+                	        debug=`/bin/rm -rf $getSource_target/.git* 2>&1`
+                        	if [[ $? -ge "1" ]]
+	                        then
+        	                        # Cmd fail
+                	                echo "FAIL"
+                        	        echo $debug
+	                                exit
+        	                else
+                	                # Cmd OK
+                        	        echo "OK"
+	                        fi
+			fi
 
 		fi
 
@@ -161,19 +185,22 @@
                                 echo "OK"
                         fi
 		
-			# On supprime les metadatas de svn
-                        printf "removeSvn $getSource_target/.svn* ... "
-                        debug=`/bin/rm -rf $getSource_target/.svn* 2>&1`
-                        if [[ $? -ge "1" ]]
-                        then
-                                # Cmd fail
-                                echo "FAIL"
-                                echo $debug
-                                exit
-                        else
-                                # Cmd OK
-                                echo "OK"
-                        fi	
+		        if [[ $environment == "PRODUCTION" ]]
+			then
+				# On supprime les metadatas de svn 
+        	                printf "removeSvn $getSource_target/.svn* ... "
+                	        debug=`/bin/rm -rf $getSource_target/.svn* 2>&1`
+                        	if [[ $? -ge "1" ]]
+                        	then
+                                	# Cmd fail
+                                	echo "FAIL"
+                                	echo $debug
+                               		 exit
+                        	else
+                                	# Cmd OK
+                                	echo "OK"
+                        	fi
+			fi	
                 fi
 
 		# Location : local

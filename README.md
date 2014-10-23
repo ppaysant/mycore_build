@@ -18,9 +18,9 @@ Script generate an output folder and a tarball. Tarball can use like official ow
 
 ## Usage
 
-Syntax : ./mycore_build.sh \<my_conf\>.conf \<outputfolder\>
+Syntax : ./mycore_build.sh \<my_conf\>.conf \<outputfolder\> \[{PRODUCTION|TEST}]\>
 
-Actually, we recommand use only relative path. 
+Actually, we recommand use only relative path. Last parameter is set by default to PRODUCTION : with TEST value, .svn and .git folders are not deleted in the outpup folder.
 
 ## Configuration examples
 
