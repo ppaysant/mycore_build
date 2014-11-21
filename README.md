@@ -22,11 +22,6 @@ Syntax : ./mycore_build.sh \<my_conf\>.conf \<outputfolder\> \[{PRODUCTION|TEST}
 
 Actually, we recommand use only relative path. Last parameter is set by default to PRODUCTION : with TEST value, .svn and .git folders are not deleted in the outpup folder.
 
-## Configuration examples
-
-
-
-
 ## Contributing
 
 This script is developed for an internal deployement of ownCloud at CNRS (French National Center for Scientific Research).
