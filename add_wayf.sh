@@ -6,7 +6,7 @@
 
 	# Params
 	output_folder=$1
-	wayf_targz="mycore_wayf-1.0.tar.gz"
+	wayf_targz="../mycore_wayf-1.1.2.tar.gz"
 
 	# On decompresse a la racine
 		printf "unTar $wayf_targz > $output_folder/ ... "

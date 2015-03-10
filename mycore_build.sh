@@ -307,8 +307,8 @@
 
 	# On genere l'archive contenant le build
 	cd $current_folder
-	printf "TAR vers $output_folder.tar.gz ... "
-	debug=`/bin/tar zcvf $output_folder.tar.gz $output_folder 2>&1`
+	printf "TAR vers $output_folder-full.tar.gz ... "
+	debug=`/bin/tar zcvf $output_folder-full.tar.gz $output_folder 2>&1`
 	if [[ $? -ge "1" ]]
         then
                 # Cmd fail
