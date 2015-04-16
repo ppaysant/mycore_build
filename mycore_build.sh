@@ -287,6 +287,16 @@
 			sh $conf_item_location $output_folder
 		fi
 
+                # Type : wayf
+                # Path : $output_folder/wayf/*
+                if [[ $conf_item_type == "wayf" ]]
+                then
+                        item_target=$output_folder/wayf
+                        # On appelle getSource
+                        getSource $conf_item_location $item_target $conf_item_gittag
+                fi
+
+
 	# Fin for conf_item
 	done
 
