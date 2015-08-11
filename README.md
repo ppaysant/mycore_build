@@ -22,7 +22,7 @@ Syntax : ./mycore_build.sh \<my_conf\>.conf \<outputfolder\> \[{PRODUCTION|TEST}
 
 Actually, we recommand use only relative path. Last parameter is set by default to PRODUCTION : with TEST value, .svn and .git folders are not deleted in the outpup folder.
 
-See https://github.com/CNRS-DSI-Dev/mycore_build/INSTALL in order to configure ownCloud install packaged with this script.
+See https://github.com/CNRS-DSI-Dev/mycore_build/INSTALL.md in order to configure ownCloud install packaged with this script.
 
 ## Contributing
 
