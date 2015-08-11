@@ -22,6 +22,8 @@ Syntax : ./mycore_build.sh \<my_conf\>.conf \<outputfolder\> \[{PRODUCTION|TEST}
 
 Actually, we recommand use only relative path. Last parameter is set by default to PRODUCTION : with TEST value, .svn and .git folders are not deleted in the outpup folder.
 
+See https://github.com/CNRS-DSI-Dev/mycore_build/INSTALL in order to configure ownCloud install packaged with this script.
+
 ## Contributing
 
 This script is developed for an internal deployement of ownCloud at CNRS (French National Center for Scientific Research).
@@ -33,5 +35,5 @@ If you want to be informed about this ownCloud project at CNRS, please contact d
 |                      |                                          |
 |:---------------------|:-----------------------------------------|
 | **Author:**          | Gilian Gambini (<gilian.gambini@dsi.cnrs.fr>)
-| **Copyright:**       | Copyright (c) 2014 CNRS DSI
+| **Copyright:**       | Copyright (c) 2015 CNRS DSI
 | **License:**         | AGPL v3, see the COPYING file.
