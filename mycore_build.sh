@@ -19,7 +19,7 @@
         if [[ $output_folder == "" || $conf_file == "" ]]
         then
                 echo "Vous devez spécifier un fichier de configuration et un repertoire de sortie"
-                echo "Usage : ./owncore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
+                echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
                 exit
         fi
 
@@ -27,7 +27,7 @@
         if [[ -d $output_folder ]]
         then
                 echo "Le dossier $output_folder existe deja !"
-                echo "Usage : ./owncore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
+                echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
                 exit
         fi
 
@@ -39,7 +39,7 @@
 			echo "[INFO] Paramètres OK"
 		else
                 	echo "Vous devez spécifier un mode cible, PRODUCTION (sans fichiers git/svn) ou TEST (avec git/svn)"
-                	echo "Usage : ./owncore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
+                	echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST}]>"
                 	exit
 		fi
 	else
