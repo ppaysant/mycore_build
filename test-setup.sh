@@ -14,8 +14,8 @@
     DATADIR=$PWD/data
 
     # Prepare oncloud install
-    sudo /bin/chmod -R 777 config
-    sudo /bin/chmod -R 777 apps
+    /bin/chmod -R 777 config
+    /bin/chmod -R 777 apps
 
     # Install ownCloud with sqlite
     ${PHP_BIN} ./occ maintenance:install -vvv \
