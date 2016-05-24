@@ -7,20 +7,17 @@
     PHP_BIN=/usr/bin/php
     PHPUNIT_BIN="phpunit"
 
-# hack temporaire
-/usr/bin/locate phpunit
-
 #
 # Test phpunit existence
 #
-    current_directory="$PWD"
-    cd "${instance_folder}"
+    # current_directory="$PWD"
+    # cd "${instance_folder}"
 
-    if [ ! -x ${PHPUNIT_BIN} ]
-    then
-        printf "PHPUNIT not found or not executable"
-        exit 1
-    fi
+    # if [ ! -x ${PHPUNIT_BIN} ]
+    # then
+    #     printf "PHPUNIT not found or not executable"
+    #     exit 1
+    # fi
 
 #
 # Run tests
