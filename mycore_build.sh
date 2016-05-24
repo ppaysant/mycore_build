@@ -100,7 +100,7 @@ apacheGID="www-data"
                     # Cmd OK
                     echo "OK"
                 fi
-                cd $current_folder
+                cd "$current_folder"
             fi
 
             if [[ $environment != "DEV" ]]
@@ -235,7 +235,7 @@ apacheGID="www-data"
     # Pour chaque ligne du fichier de conf
     for conf_item in `cat "$conf_file"`
     do
-        cd $current_folder
+        cd "$current_folder"
         conf_item_type=`echo $conf_item | cut -d "$conf_delimiter" -f 1`
         conf_item_location=`echo $conf_item | cut -d "$conf_delimiter" -f 2`
         conf_item_gittag=`echo $conf_item | cut -d "$conf_delimiter" -f 3`
@@ -300,9 +300,9 @@ apacheGID="www-data"
     # On positionne les droits sur les fichiers
     if [[ $environment != "TEST" ]]
     then
-        cd $current_folder
+        cd "$current_folder"
         printf "CHOWN ${apacheUID} sur $output_folder ... "
-        debug=`sudo /bin/chown ${apacheUID}:${apacheGID} $output_folder -R 2>&1`
+        debug=`sudo /bin/chown ${apacheUID}:${apacheGID} "$output_folder" -R 2>&1`
         if [[ $? -ge "1" ]]
         then
             # Cmd fail
@@ -315,9 +315,9 @@ apacheGID="www-data"
         fi
 
         # On genere l'archive contenant le build
-        cd $current_folder
+        cd "$current_folder"
         printf "TAR vers $output_folder-full.tar.gz ... "
-        debug=`/bin/tar zcvf $output_folder-full.tar.gz $output_folder 2>&1`
+        debug=`/bin/tar zcvf ${output_folder}-full.tar.gz "$output_folder" 2>&1`
         if [[ $? -ge "1" ]]
         then
             # Cmd fail
@@ -331,7 +331,7 @@ apacheGID="www-data"
     else
         # TEST env
         printf "Launch tests setup"
-        /bin/bash "./test-setup.sh" $output_folder
+        /bin/bash "./test-setup.sh" "$output_folder"
         if [[ $? -ge "1" ]]
         then
             # Cmd fail

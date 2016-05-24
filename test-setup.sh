@@ -9,7 +9,7 @@
 #
 # Launch instance installation
 #
-    current_directory=$PWD
+    current_directory="$PWD"
     cd ${instance_folder}
     DATADIR=$PWD/data
 
