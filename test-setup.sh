@@ -10,7 +10,7 @@
 # Launch instance installation
 #
     current_directory="$PWD"
-    cd ${instance_folder}
+    cd "${instance_folder}"
     DATADIR=$PWD/data
 
     # Prepare oncloud install
@@ -25,3 +25,6 @@
 
     # get PHPUNIT xml conf
     cp ../test-mycore.conf .
+
+    # come back
+    cd "${current_directory}"

@@ -342,4 +342,18 @@ apacheGID="www-data"
             # Cmd OK
             echo "OK"
         fi
+
+        # TEST run
+        printf "Run tests"
+        /bin/bash "./test-run.sh" "$output_folder"
+        if [[ $? -ge "1" ]]
+        then
+            # Cmd fail
+            echo "FAIL"
+            echo $debug
+            exit
+        else
+            # Cmd OK
+            echo "OK"
+        fi
     fi
