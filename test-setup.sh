@@ -5,6 +5,15 @@
 #
     instance_folder=$1
     PHP_BIN=/usr/bin/php
+    LOGS="./logs"
+
+#
+# Create logs folder if non existent
+#
+    if [ -e ${LOGS} ]
+    then
+        mkdir ${LOGS}
+    fi
 
 #
 # Launch instance installation

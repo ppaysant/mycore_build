@@ -5,7 +5,8 @@
 #
     instance_folder="$1"
     PHP_BIN=/usr/bin/php
-    PHPUNIT_BIN="phpunit"
+    PHPUNIT_BIN="/usr/local/bin/phpunit"
+    LOGS="../logs"
 
 #
 # Test phpunit existence
@@ -26,7 +27,7 @@
     cd "${instance_folder}"
 
     #
-    ${PHPUNIT_BIN} -c test-mycore.conf
+    ${PHPUNIT_BIN} -c test-mycore.conf --log-junit="${LOGS}/junit.xml"
 
     # come back
     cd "${current_directory}"
