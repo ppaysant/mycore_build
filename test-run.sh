@@ -5,7 +5,7 @@
 #
     instance_folder="$1"
     PHP_BIN=/usr/bin/php
-    PHPUNIT_BIN="/usr/local/bin/phpunit"
+    PHPUNIT_BIN="phpunit"
     LOGS="../logs"
 
 #
