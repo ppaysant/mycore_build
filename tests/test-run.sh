@@ -4,6 +4,7 @@
 # Params
 #
     instance_folder="$1"
+    appToTest=$2
     PHP_BIN=/usr/bin/php
     PHPUNIT_BIN="phpunit"
     LOGS="../logs"
@@ -27,7 +28,12 @@
     cd "${instance_folder}"
 
     #
-    ${PHPUNIT_BIN} -c test-mycore.conf --log-junit="${LOGS}/junit.xml"
+    if [ -z ${appToTest} ]
+    then
+        ${PHPUNIT_BIN} -c mycore-build.conf --log-junit="${LOGS}/junit.xml"
+    else
+        ${PHPUNIT_BIN} -c mycore-build-${appToTest}.conf --log-junit="${LOGS}/junit.xml"
+    fi
 
     # come back
     cd "${current_directory}"

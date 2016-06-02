@@ -14,15 +14,23 @@ apacheGID="www-data"
     current_folder=`/bin/pwd`
     # Version PROD ou TEST
     environment=$3
+    # App à tester
+    appToTest=$4
 
 #
 # Checks
 #
+    # Display help
+    #
+    function displayHelp {
+        echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>"
+    }
+
     # Verif dossier destination
         if [[ $output_folder == "" || $conf_file == "" ]]
         then
                 echo "Vous devez spécifier un fichier de configuration et un repertoire de sortie"
-                echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST|DEV}]>"
+                displayHelp
                 exit
         fi
 
@@ -30,7 +38,7 @@ apacheGID="www-data"
         if [[ -d $output_folder ]]
         then
             echo "Le dossier $output_folder existe deja !"
-            echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST|DEV}]>"
+            displayHelp
             exit
         fi
 
@@ -42,7 +50,7 @@ apacheGID="www-data"
                 echo "[INFO] Paramètres OK"
             else
                 echo "Vous devez spécifier un mode cible, PRODUCTION ou TEST (sans fichiers git/svn),  ou DEV (avec git/svn)"
-                echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST|DEV}]>"
+                displayHelp
                 exit
             fi
         else
@@ -56,6 +64,7 @@ apacheGID="www-data"
 #
 # Fonctions
 #
+
     # GetSource - DL sources d'un item
     # Recup des sources de l'item suivant la location et place l'item dans l'arborescence cible
     function getSource {
@@ -331,7 +340,7 @@ apacheGID="www-data"
     else
         # TEST env
         printf "Launch tests setup"
-        /bin/bash "./test-setup.sh" "$output_folder"
+        /bin/bash "./tests/test-setup.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
             # Cmd fail
@@ -345,7 +354,7 @@ apacheGID="www-data"
 
         # TEST run
         printf "Run tests"
-        /bin/bash "./test-run.sh" "$output_folder"
+        /bin/bash "./tests/test-run.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
             # Cmd fail

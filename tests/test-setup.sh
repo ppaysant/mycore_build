@@ -4,6 +4,7 @@
 # Params
 #
     instance_folder=$1
+    appToTest=$2
     PHP_BIN=/usr/bin/php
     LOGS="./logs"
 
@@ -33,7 +34,14 @@
         --admin-user="admin" --admin-pass=admin --data-dir="${DATADIR}"
 
     # get PHPUNIT xml conf
-    cp ../test-mycore.conf .
+    if [ -z ${appToTest} ]
+    then
+        cp ../tests/mycore-build.conf .
+    else
+        cp ../tests/mycore-build-${appToTest}.conf .
+    fi
+
+    cp ../tests/test-mycore-bootstrap.php .
 
     # come back
     cd "${current_directory}"
