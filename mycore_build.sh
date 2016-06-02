@@ -339,7 +339,7 @@ apacheGID="www-data"
         fi
     else
         # TEST env
-        printf "Launch tests setup"
+        printf "Launch tests setup\n"
         /bin/bash "./tests/test-setup.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
@@ -353,7 +353,7 @@ apacheGID="www-data"
         fi
 
         # TEST run
-        printf "Run tests"
+        printf "Run tests\n"
         /bin/bash "./tests/test-run.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
