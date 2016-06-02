@@ -33,12 +33,12 @@
         --database-user="admin" --database-pass=owncloud --database-table-prefix=oc_ \
         --admin-user="admin" --admin-pass=admin --data-dir="${DATADIR}"
 
-    # get PHPUNIT xml conf
+    # get PHPUNIT xml
     if [ -z ${appToTest} ]
     then
-        cp ../tests/mycore-build.conf .
+        cp ../tests/phpunit-mycore.xml .
     else
-        cp ../tests/mycore-build-${appToTest}.conf .
+        cp ../tests/phpunit-${appToTest}.xml .
     fi
 
     cp ../tests/test-mycore-bootstrap.php .
