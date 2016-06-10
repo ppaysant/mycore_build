@@ -1,7 +1,7 @@
 #!/bin/bash
 
-apacheUID="www-data"
-apacheGID="www-data"
+apacheUID="apache"
+apacheGID="apache"
 
 #
 # Parametres
