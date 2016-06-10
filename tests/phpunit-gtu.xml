@@ -7,6 +7,6 @@
     </testsuites>
 
     <logging>
-        <log type="junit" target="../logs/junit.xml" logIncompleteSkipped="false"/>
+        <log type="junit" target="../logs/gtu-junit.xml" logIncompleteSkipped="false"/>
     </logging>
 </phpunit>

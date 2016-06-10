@@ -1,0 +1,13 @@
+<phpunit bootstrap="apps/gatekeeper/tests/bootstrap.php">
+    <testsuites>
+        <testsuite name="CNRS / My CoRe - Gatekeeper - tests unitaires">
+
+            <directory>apps/gatekeeper/tests/appinfo/</directory>
+            <directory>apps/gatekeeper/tests/service/</directory>
+        </testsuite>
+    </testsuites>
+
+    <logging>
+        <log type="junit" target="../logs/gatekeeper-junit.xml" logIncompleteSkipped="false"/>
+    </logging>
+</phpunit>

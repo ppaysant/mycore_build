@@ -2,13 +2,15 @@
     <testsuites>
         <testsuite name="CNRS / My CoRe - tests unitaires">
 
-            <directory>apps/gtu/tests/service/</directory>
             <directory>apps/user_servervars2/tests/appinfo/</directory>
             <directory>apps/user_servervars2/tests/backend/</directory>
             <directory>apps/user_servervars2/tests/controller/</directory>
             <directory>apps/user_servervars2/tests/hook/</directory>
             <directory>apps/user_servervars2/tests/lib/</directory>
             <directory>apps/user_servervars2/tests/service/</directory>
+            <directory>apps/gtu/tests/service/</directory>
+            <directory>apps/gatekeeper/tests/appinfo/</directory>
+            <directory>apps/gatekeeper/tests/service/</directory>
         </testsuite>
     </testsuites>
 
@@ -16,3 +18,4 @@
         <log type="junit" target="../logs/junit.xml" logIncompleteSkipped="false"/>
     </logging>
 </phpunit>
+
