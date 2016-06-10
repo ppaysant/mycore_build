@@ -363,6 +363,21 @@ apacheGID="apache"
             echo "OK"
         fi
 
+	# On passe le .htaccess en .htaccess.sample
+        cd "$current_folder"
+        printf "Renommage du htaccess ... "
+	debug=`sudo /bin/mv "$output_folder/.htaccess" "$output_folder/.htaccess.sample" 2>&1`
+        if [[ $? -ge "1" ]]
+        then
+            # Cmd fail
+            echo "FAIL"
+            echo $debug
+            exit
+        else
+            # Cmd OK
+            echo "OK"
+        fi
+
         # On genere l'archive contenant le build
         cd "$current_folder"
         printf "TAR vers $output_folder-full.tar.gz ... "
