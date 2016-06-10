@@ -18,9 +18,12 @@ Script generate an output folder and a tarball. Tarball can use like official ow
 
 ## Usage
 
-Syntax : ./mycore_build.sh \<my_conf\>.conf \<outputfolder\> \[{PRODUCTION|TEST}]\>
+Syntax : 
+```bash
+./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>
+```
 
-Actually, we recommand use only relative path. Last parameter is set by default to PRODUCTION : with TEST value, .svn and .git folders are not deleted in the outpup folder.
+Actually, we recommand use only relative path. Last parameter is set by default to PRODUCTION : with DEV value, .svn and .git folders are not deleted in the outpup folder. TEST value is used to build test environment (for instance, to use with jenkins).
 
 See https://github.com/CNRS-DSI-Dev/mycore_build/blob/master/INSTALL.md in order to configure ownCloud install packaged with this script.
 
@@ -28,6 +31,7 @@ See https://github.com/CNRS-DSI-Dev/mycore_build/blob/master/INSTALL.md in order
 
 Extract your tarball to your web root directory (ex: /var/www/)
 Add those specification in the config/config.php file :
+```php
   'theme' => 'mycore',
   'appstoreenabled' => false,
   'custom_adminemail' => '<your admin email>',
@@ -58,10 +62,13 @@ Add those specification in the config/config.php file :
   'backup_file_before_user_deletion' => true,
   'backup_file_dir' => '<your backup file directory>',
   ),
+```
 
 === Additionnal seetings ===
+
 = Enable apps =
-= Share seetings =
+
+= Share settings =
 
 Allow users to send an email to notify file/directory sharing : enable
 
@@ -72,25 +79,27 @@ Allow file 4096MB file upload in php.ini file
 = Antivirus =
 
 Add Index on table oc_files_antivirus:
+```sql
 ALTER TABLE `oc_files_antivirus` ADD INDEX ( `fileid` ) ; 
+```
 
-Mode : Deamon (socket)
-Socket : /var/run/clamav/clamd.sock (can be found in /etc/clamd.conf)
-Stream length : 10485760
-Action : Only notify
+* Mode : Deamon (socket)
+* Socket : /var/run/clamav/clamd.sock (can be found in /etc/clamd.conf)
+* Stream length : 10485760
+* Action : Only notify
 
 = Password policy =
 
-Minimum length : 8
-Need Upper and Lower character : enable
-Need Numbers : enable
-Need special character : enable
-Special character list : @?!&-_()=
+* Minimum length : 8
+* Need Upper and Lower character : enable
+* Need Numbers : enable
+* Need special character : enable
+* Special character list : @?!&-_()=
 
 = user_servervars2 =
 
 In the webUI, admin panel:
-Stop If Empty : enable
+* Stop If Empty : enable
 
 
 

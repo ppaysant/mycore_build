@@ -14,15 +14,23 @@ apacheGID="www-data"
     current_folder=`/bin/pwd`
     # Version PROD ou TEST
     environment=$3
+    # App à tester
+    appToTest=$4
 
 #
 # Checks
 #
+    # Display help
+    #
+    function displayHelp {
+        echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>"
+    }
+
     # Verif dossier destination
         if [[ $output_folder == "" || $conf_file == "" ]]
         then
                 echo "Vous devez spécifier un fichier de configuration et un repertoire de sortie"
-                echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST|DEV}]>"
+                displayHelp
                 exit
         fi
 
@@ -30,7 +38,7 @@ apacheGID="www-data"
         if [[ -d $output_folder ]]
         then
             echo "Le dossier $output_folder existe deja !"
-            echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST|DEV}]>"
+            displayHelp
             exit
         fi
 
@@ -42,13 +50,13 @@ apacheGID="www-data"
                 echo "[INFO] Paramètres OK"
             else
                 echo "Vous devez spécifier un mode cible, PRODUCTION ou TEST (sans fichiers git/svn),  ou DEV (avec git/svn)"
-                echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|TEST|DEV}]>"
+                displayHelp
                 exit
             fi
         else
             if [[ $environment == "" ]]
             then
-                echo "[INFO] Paramètre environement non renseigné, par défaut valorisé à PRODUCTION"
+                echo "[INFO] Paramètre environment non renseigné, par défaut valorisé à PRODUCTION"
                 environment="PRODUCTION"
             fi
         fi
@@ -56,6 +64,7 @@ apacheGID="www-data"
 #
 # Fonctions
 #
+
     # GetSource - DL sources d'un item
     # Recup des sources de l'item suivant la location et place l'item dans l'arborescence cible
     function getSource {
@@ -65,14 +74,23 @@ apacheGID="www-data"
         getSource_target=$2
         # GitHub tag
         getSource_tag=$3
+        # App subdir
+        getSource_subdir=$4
 
         # Location : Github
         # Alors clone github + clean meatadata .git*
         if [[ $getSource_location =~ https://github.com/.* ]]
         then
             # clone(=checkout) d'une branche particuliere(=tag)
+
+            gitDepth=''
+            if [ ${environment} != DEV ]
+            then
+                gitDepth="--depth=1"
+            fi
+
             printf "getSource github > $getSource_target ... "
-            debug=`/usr/bin/git clone --branch $getSource_tag $getSource_location $getSource_target 2>&1`
+            debug=`/usr/bin/git clone --branch $getSource_tag ${gitDepth} $getSource_location $getSource_target 2>&1`
             if [[ $? -ge "1" ]]
             then
                 # Cmd fail
@@ -90,6 +108,26 @@ apacheGID="www-data"
                 printf "updateSubmodules > $getSource_target ... "
                 cd $getSource_target
                 debug=`/usr/bin/git submodule update --recursive --init 2>&1`
+                if [[ $? -ge "1" ]]
+                then
+                    # Cmd fail
+                    echo "FAIL"
+                    echo $debug
+                    exit
+                else
+                    # Cmd OK
+                    echo "OK"
+                fi
+                cd "$current_folder"
+            fi
+
+            # en cas de subapp
+            if [ ! -z $conf_item_subdir ]
+            then
+                printf "Keep only ${conf_item_subdir} from ${getSource_target}... "
+                cd ${getSource_target}
+                pwd
+                debug=`git filter-branch --prune-empty --subdirectory-filter ${conf_item_subdir} HEAD`
                 if [[ $? -ge "1" ]]
                 then
                     # Cmd fail
@@ -239,6 +277,7 @@ apacheGID="www-data"
         conf_item_type=`echo $conf_item | cut -d "$conf_delimiter" -f 1`
         conf_item_location=`echo $conf_item | cut -d "$conf_delimiter" -f 2`
         conf_item_gittag=`echo $conf_item | cut -d "$conf_delimiter" -f 3`
+        conf_item_subdir=`echo $conf_item | cut -d "$conf_delimiter" -f 4`
 
         # Type : Core
         # Path : $output_folder/
@@ -262,6 +301,16 @@ apacheGID="www-data"
 
             # On appelle getSource
             getSource $conf_item_location $item_target $conf_item_gittag
+        fi
+
+        # Type : SubApp
+        # Path : $output_folder/apps/*
+        if [[ $conf_item_type == "subapp" ]]
+        then
+            item_target=$output_folder/apps/$conf_item_subdir
+
+            # On appelle getSource
+            getSource $conf_item_location $item_target $conf_item_gittag $conf_item_subdir
         fi
 
         # Type : Theme
@@ -330,8 +379,8 @@ apacheGID="www-data"
         fi
     else
         # TEST env
-        printf "Launch tests setup"
-        /bin/bash "./test-setup.sh" "$output_folder"
+        printf "Launch tests setup\n"
+        /bin/bash "./tests/test-setup.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
             # Cmd fail
@@ -344,8 +393,8 @@ apacheGID="www-data"
         fi
 
         # TEST run
-        printf "Run tests"
-        /bin/bash "./test-run.sh" "$output_folder"
+        printf "Run tests\n"
+        /bin/bash "./tests/test-run.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
             # Cmd fail

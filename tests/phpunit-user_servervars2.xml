@@ -1,6 +1,6 @@
 <phpunit bootstrap="apps/user_servervars2/tests/bootstrap.php">
     <testsuites>
-        <testsuite name="CNRS - User ServerVars 2 - tests unitaires">
+        <testsuite name="CNRS / My CoRe - User ServerVars 2- tests unitaires">
 
             <directory>apps/user_servervars2/tests/appinfo/</directory>
             <directory>apps/user_servervars2/tests/backend/</directory>
@@ -12,6 +12,6 @@
     </testsuites>
 
     <logging>
-        <log type="junit" target="../logs/junit.xml" logIncompleteSkipped="false"/>
+        <log type="junit" target="../logs/user_servervars2-junit.xml" logIncompleteSkipped="false"/>
     </logging>
 </phpunit>

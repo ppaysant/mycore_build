@@ -4,6 +4,7 @@
 # Params
 #
     instance_folder=$1
+    appToTest=$2
     PHP_BIN=/usr/bin/php
     LOGS="./logs"
 
@@ -32,8 +33,15 @@
         --database-user="admin" --database-pass=owncloud --database-table-prefix=oc_ \
         --admin-user="admin" --admin-pass=admin --data-dir="${DATADIR}"
 
-    # get PHPUNIT xml conf
-    cp ../test-mycore.conf .
+    # get PHPUNIT xml
+    if [ -z ${appToTest} ]
+    then
+        cp ../tests/phpunit-mycore.xml .
+    else
+        cp ../tests/phpunit-${appToTest}.xml .
+    fi
+
+    cp ../tests/test-mycore-bootstrap.php .
 
     # come back
     cd "${current_directory}"
