@@ -45,7 +45,7 @@ apacheGID="apache"
         # Verif dossier destination
         if [[ $environment != "" ]]
         then
-            if [[ $environment == "PRODUCTION" || $environment == "TEST" ]]
+            if [[ $environment == "PRODUCTION" || $environment == "DEV" || $environment == "TEST" ]]
              then
                 echo "[INFO] Paramètres OK"
             else
