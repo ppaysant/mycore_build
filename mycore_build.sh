@@ -61,6 +61,29 @@ apacheGID="apache"
             fi
         fi
 
+    # verif des utilitaires nécessaires
+    debug=`which wget`
+    if [[ $? -ge "1" ]]
+    then
+        # Cmd fail
+        echo "FAIL, wget not found. L'utilitaire 'wget' doit être installé."
+        exit
+    else
+        echo "[INFO] wget command found. Fine!"
+    fi
+
+    debug=`which sudo`
+    if [[ $? -ge "1" ]]
+    then
+        # Cmd fail
+        echo "FAIL, sudo not found. L'utilitaire 'sudo' doit être installé (et configuré)."
+        exit
+    else
+        echo "[INFO] sudo command found. Fine!"
+    fi
+
+    exit
+
 #
 # Fonctions
 #
