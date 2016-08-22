@@ -82,8 +82,6 @@ apacheGID="apache"
         echo "[INFO] sudo command found. Fine!"
     fi
 
-    exit
-
 #
 # Fonctions
 #
