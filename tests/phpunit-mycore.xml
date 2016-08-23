@@ -11,6 +11,7 @@
             <directory>apps/gtu/tests/service/</directory>
             <directory>apps/gatekeeper/tests/appinfo/</directory>
             <directory>apps/gatekeeper/tests/service/</directory>
+            <directory>apps/password_policy/tests/unit/</directory>
         </testsuite>
     </testsuites>
 
