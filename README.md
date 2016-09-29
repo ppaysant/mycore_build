@@ -20,10 +20,15 @@ Script generate an output folder and a tarball. Tarball can use like official ow
 
 Syntax : 
 ```bash
-./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>
+./mycore_build.sh [-r] [-u UID] [-g GID] <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>
 ```
 
 Actually, we recommand use only relative path. Last parameter is set by default to PRODUCTION : with DEV value, .svn and .git folders are not deleted in the outpup folder. TEST value is used to build test environment (for instance, to use with jenkins).
+
+The ```-r``` option allows to retry your build without getting already got sources. It recreates the full tar.gz in case of PRODUCTION mode.
+
+Options ```-u``` and ```-g``` allow to set web server uid and gid. By default, these options are set to apache (ie redhat/centos default). 
+
 
 See https://github.com/CNRS-DSI-Dev/mycore_build/blob/master/INSTALL.md in order to configure ownCloud install packaged with this script.
 
