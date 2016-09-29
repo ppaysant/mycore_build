@@ -1,7 +1,54 @@
 #!/bin/bash
 
+# UID et GID du serveur web
 apacheUID="apache"
 apacheGID="apache"
+
+# binaires
+PHP_BIN="/usr/bin/php"
+NODE_BIN=node
+NPM_BIN=npm
+SUDO_BIN=/usr/bin/sudo
+TAR_BIN=/usr/bin/tar
+
+# conf
+needed_php_modules="bz2 ctype curl date dom exif fileinfo ftp gd iconv intl mbstring pcre PDO pdo_mysql Phar posix readline sqlite3 xml"
+
+#
+# Helper
+#
+
+# Display help
+function displayHelp {
+    echo "Usage : ./mycore_build.sh [-r] [-u UID] [-g GID] <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>"
+}
+
+#
+# Récupération des options
+#
+RETRY=0
+OPTIND=1
+while getopts ":ru:g:" opt; do
+    case $opt in
+        r)
+            echo "[INFO] Mode RETRY actif"
+            RETRY=1
+            ;;
+        u)
+            apacheUID=${OPTARG}
+            ;;
+        g)
+            apacheGID=${OPTARG}
+            ;;
+        ?)
+            echo "Option invalide :" ${OPTARG}
+            displayHelp
+            ;;
+    esac
+done
+
+shift $((OPTIND - 1))
+[ "$1" = "--" ] && shift
 
 #
 # Parametres
@@ -18,68 +65,120 @@ apacheGID="apache"
     appToTest=$4
 
 #
-# Checks
+# Checks paramètres
 #
-    # Display help
-    #
-    function displayHelp {
-        echo "Usage : ./mycore_build.sh <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>"
-    }
+
+    echo "[INFO] Serveur uid" ${apacheUID} "et gid" ${apacheGID}
 
     # Verif dossier destination
-        if [[ $output_folder == "" || $conf_file == "" ]]
-        then
-                echo "Vous devez spécifier un fichier de configuration et un repertoire de sortie"
-                displayHelp
-                exit
-        fi
+    if [[ $output_folder == "" || $conf_file == "" ]]
+    then
+            echo "Vous devez spécifier un fichier de configuration et un repertoire de sortie"
+            displayHelp
+            exit
+    fi
 
     # On empeche d'ecraser un build precedent
-        if [[ -d $output_folder ]]
-        then
-            echo "Le dossier $output_folder existe deja !"
+    if [[ -d ${output_folder} && ! ${RETRY} -eq 1 ]]
+    then
+        echo "Le dossier ${output_folder} existe deja !"
+        displayHelp
+        exit
+    fi
+
+    # Verif dossier destination
+    if [[ $environment != "" ]]
+    then
+        if [[ $environment == "PRODUCTION" || $environment == "DEV" || $environment == "TEST" ]]
+         then
+            echo "[INFO] Paramètres OK"
+        else
+            echo "Vous devez spécifier un mode cible, PRODUCTION ou TEST (sans fichiers git/svn),  ou DEV (avec git/svn)"
             displayHelp
             exit
         fi
-
-        # Verif dossier destination
-        if [[ $environment != "" ]]
+    else
+        if [[ $environment == "" ]]
         then
-            if [[ $environment == "PRODUCTION" || $environment == "DEV" || $environment == "TEST" ]]
-             then
-                echo "[INFO] Paramètres OK"
-            else
-                echo "Vous devez spécifier un mode cible, PRODUCTION ou TEST (sans fichiers git/svn),  ou DEV (avec git/svn)"
-                displayHelp
-                exit
-            fi
-        else
-            if [[ $environment == "" ]]
-            then
-                echo "[INFO] Paramètre environment non renseigné, par défaut valorisé à PRODUCTION"
-                environment="PRODUCTION"
-            fi
+            echo "[INFO] Paramètre environment non renseigné, par défaut valorisé à PRODUCTION"
+            environment="PRODUCTION"
         fi
+    fi
 
-    # verif des utilitaires nécessaires
+#
+# Check des utilitaires nécessaires
+#
+
+    #  wget
     debug=`which wget`
     if [[ $? -ge "1" ]]
     then
-        # Cmd fail
-        echo "FAIL, wget not found. L'utilitaire 'wget' doit être installé."
+        echo "ERREUR, commande wget non trouvée. L'utilitaire 'wget' doit être installé."
         exit
     else
-        echo "[INFO] wget command found. Fine!"
+        echo "[INFO] commande wget trouvée. Ok!"
     fi
 
+    #  sudo
     debug=`which sudo`
     if [[ $? -ge "1" ]]
     then
-        # Cmd fail
-        echo "FAIL, sudo not found. L'utilitaire 'sudo' doit être installé (et configuré)."
+        echo "ERREUR, commande sudo non trouvé. L'utilitaire 'sudo' doit être installé (et configuré)."
         exit
     else
-        echo "[INFO] sudo command found. Fine!"
+        echo "[INFO] commande sudo trouvée. Ok!"
+    fi
+
+    #  make
+    debug=`which make`
+    if [[ $? -ge "1" ]]
+    then
+        echo "ERREUR, commande make non trouvée. L'utilitaire 'make' doit être installé."
+        exit
+    else
+        echo "[INFO] commande make trouvée. Ok!"
+    fi
+
+    #  PHP
+    debug=`${PHP_BIN} -r 'if (PHP_MAJOR_VERSION > 5 OR ( PHP_MAJOR_VERSION == 5 AND PHP_MINOR_VERSION >= 6 )) { exit(0); } else { exit(1); }'`
+    if [[ $? -ge "1" ]]
+    then
+        echo "ERREUR, PHP non trouvé ou version obsolète. La version minimale de PHP est PHP 5.6. Merci de renseigner le chemin du binaire PHP en haut de ce script."
+        exit
+    else
+        echo "[INFO] commande PHP trouvée et version suffisante. Ok!"
+    fi
+
+    #  PHP modules
+    is_missing_module=0
+    missing_modules=""
+    for module in ${needed_php_modules}
+    do
+        debug=`${PHP_BIN} -m | grep ${module}`
+        if [[ $? -ge "1" ]]
+        then
+            echo "ERREUR, module PHP ${module} non trouvé."
+            is_missing_module=1
+            missing_modules="${missing_modules} ${module}"
+        else
+            echo "[INFO] module PHP ${module} trouvé. Ok!"
+        fi
+    done
+
+    if [[ ! ${is_missing_module} -eq 0 ]]
+    then
+        echo "ERREUR, certains modules PHP sont manquants :${missing_modules}, merci de les installer."
+        exit
+    fi
+
+    # nodejs
+    debug=`${NODE_BIN} -v 2&>/dev/null`
+    if [ $? -ge "1" ]
+    then
+        echo "ERREUR, commande nodejs non trouvée. Merci d'installer nodejs (https://github.com/creationix/nvm)."
+        exit
+    else
+        echo "[INFO] commande nodejs trouvée. Ok!"
     fi
 
 #
@@ -98,6 +197,12 @@ apacheGID="apache"
         # App subdir
         getSource_subdir=$4
 
+        if [[ -d ${getSource_target} ]]
+        then
+            echo "[INFO] ${getSource_target} existe déjà, passage à la suite"
+            return
+        fi
+
         # Location : Github
         # Alors clone github + clean meatadata .git*
         if [[ $getSource_location =~ https://github.com/.* ]]
@@ -114,12 +219,10 @@ apacheGID="apache"
             debug=`/usr/bin/git clone --branch $getSource_tag ${gitDepth} $getSource_location $getSource_target 2>&1`
             if [[ $? -ge "1" ]]
             then
-                # Cmd fail
-                echo "FAIL"
+                echo "ERREUR"
                 echo $debug
                 exit
             else
-                # Cmd OK
                 echo "OK"
             fi
 
@@ -131,12 +234,10 @@ apacheGID="apache"
                 debug=`/usr/bin/git submodule update --recursive --init 2>&1`
                 if [[ $? -ge "1" ]]
                 then
-                    # Cmd fail
-                    echo "FAIL"
+                    echo "ERREUR"
                     echo $debug
                     exit
                 else
-                    # Cmd OK
                     echo "OK"
                 fi
                 cd "$current_folder"
@@ -151,12 +252,10 @@ apacheGID="apache"
                 debug=`git filter-branch --prune-empty --subdirectory-filter ${conf_item_subdir} HEAD`
                 if [[ $? -ge "1" ]]
                 then
-                    # Cmd fail
-                    echo "FAIL"
+                    echo "ERREUR"
                     echo $debug
                     exit
                 else
-                    # Cmd OK
                     echo "OK"
                 fi
                 cd "$current_folder"
@@ -169,12 +268,10 @@ apacheGID="apache"
                 debug=`/bin/rm -rf $getSource_target/.git* 2>&1`
                 if [[ $? -ge "1" ]]
                 then
-                    # Cmd fail
-                    echo "FAIL"
+                    echo "ERREUR"
                     echo $debug
                     exit
                 else
-                    # Cmd OK
                     echo "OK"
                 fi
             fi
@@ -190,12 +287,10 @@ apacheGID="apache"
             debug=`/usr/bin/wget -x $getSource_location -O $getSource_target 2>&1`
             if [[ $? -ge "1" ]]
             then
-                # Cmd fail
-                echo "FAIL"
+                echo "ERREUR"
                 echo $debug
                 exit
             else
-                # Cmd OK
                 echo "OK"
             fi
 
@@ -204,12 +299,10 @@ apacheGID="apache"
             debug=`/bin/tar zxvf $getSource_target -C $output_folder/apps/ 2>&1`
             if [[ $? -ge "1" ]]
             then
-                # Cmd fail
-                echo "FAIL"
+                echo "ERREUR"
                 echo $debug
                 exit
             else
-                # Cmd OK
                 echo "OK"
             fi
 
@@ -218,12 +311,10 @@ apacheGID="apache"
             debug=`/bin/rm $getSource_target 2>&1`
             if [[ $? -ge "1" ]]
             then
-                # Cmd fail
-                echo "FAIL"
+                echo "ERREUR"
                 echo $debug
                 exit
             else
-                # Cmd OK
                 echo "OK"
             fi
         fi
@@ -237,12 +328,10 @@ apacheGID="apache"
             debug=`/usr/bin/svn checkout $getSource_location $getSource_target 2>&1`
             if [[ $? -ge "1" ]]
             then
-                # Cmd fail
-                echo "FAIL"
+                echo "ERREUR"
                 echo $debug
                 exit
             else
-                # Cmd OK
                 echo "OK"
             fi
 
@@ -253,12 +342,10 @@ apacheGID="apache"
                 debug=`/bin/rm -rf $getSource_target/.svn* 2>&1`
                 if [[ $? -ge "1" ]]
                 then
-                    # Cmd fail
-                    echo "FAIL"
+                    echo "ERREUR"
                     echo $debug
                     exit
                 else
-                    # Cmd OK
                     echo "OK"
                 fi
             fi
@@ -273,12 +360,10 @@ apacheGID="apache"
             debug=`cp -pr $getSource_location $getSource_target 2>&1`
             if [[ $? -ge "1" ]]
             then
-                # Cmd fail
-                echo "FAIL"
+                echo "ERREUR"
                 echo $debug
                 exit
             else
-                # Cmd OK
                 echo "OK"
             fi
         fi
@@ -367,64 +452,110 @@ apacheGID="apache"
     # Fin for conf_item
     done
 
+    # Lancer la commande de build (le makefile)
+    cd "$output_folder"
+    printf "BUILD dans $output_folder ... "
+    debug=`make`
+    if [[ $? -ge "1" ]]
+    then
+        echo "ERREUR"
+        echo $debug
+        exit
+    else
+        echo "OK"
+    fi
+
     # On positionne les droits sur les fichiers
     if [[ $environment != "TEST" ]]
     then
         cd "$current_folder"
         printf "CHOWN ${apacheUID} sur $output_folder ... "
-        debug=`sudo /bin/chown ${apacheUID}:${apacheGID} "$output_folder" -R 2>&1`
+        debug=`${SUDO_BIN} /bin/chown ${apacheUID}:${apacheGID} "$output_folder" -R 2>&1`
         if [[ $? -ge "1" ]]
         then
-            # Cmd fail
-            echo "FAIL"
+            echo "ERREUR"
             echo $debug
             exit
         else
-            # Cmd OK
             echo "OK"
         fi
 
-	# On passe le .htaccess en .htaccess.sample
+    # On passe le .htaccess en .htaccess.sample
         cd "$current_folder"
-        printf "Renommage du htaccess ... "
-	debug=`sudo /bin/mv "$output_folder/.htaccess" "$output_folder/.htaccess.sample" 2>&1`
-        if [[ $? -ge "1" ]]
+        if [[ ! ${RETRY} -eq 1 ]]
         then
-            # Cmd fail
-            echo "FAIL"
-            echo $debug
-            exit
-        else
-            # Cmd OK
-            echo "OK"
+            printf "Renommage du htaccess ... "
+            debug=`${SUDO_BIN} /bin/mv "$output_folder/.htaccess" "$output_folder/.htaccess.sample" 2>&1`
+            if [[ $? -ge "1" ]]
+            then
+                echo "ERREUR"
+                echo $debug
+                exit
+            else
+                echo "OK"
+            fi
         fi
 
         # On genere l'archive contenant le build
         cd "$current_folder"
+
+        if [[ -f ${output_folder}-full.tar.gz ]]
+        then
+            if [[ ${RETRY} -eq 1 ]]
+            then
+                debug=`rm -f "./${output_folder}-full.tar.gz"`
+                if [[ $? -ge "1" ]]
+                then
+                    echo "FAIL, impossible de supprimer l'archive ./${output_folder}-full.tar.gz."
+                    echo $debug
+                    exit
+                else
+                    echo "[INFO] Suppression de la précédente archive ${output_folder}-full.tar.gz."
+                fi
+            else
+                echo "[FAIL] Le fichier ${output_folder}-full.tar.gz existe déjà. Supprimez le fichier ou relancer en mode RETRY (option -r)."
+                exit
+            fi
+        fi
+
         printf "TAR vers $output_folder-full.tar.gz ... "
-        debug=`/bin/tar zcvf ${output_folder}-full.tar.gz "$output_folder" 2>&1`
+        debug=`${SUDO_BIN} /bin/tar zcvf ${output_folder}-full.tar.gz "$output_folder" 2>&1`
         if [[ $? -ge "1" ]]
         then
-            # Cmd fail
-            echo "FAIL"
+            echo "ERREUR"
             echo $debug
             exit
         else
-            # Cmd OK
             echo "OK"
         fi
     else
         # TEST env
+
+        # Remettre l'app en "non installé" si mode RETRY
+        cd "${current_folder}/${output_folder}"
+        if [[ -w "config/config.php" && ${RETRY} -eq 1 ]]
+        then
+            # in config.php, set 'installed' => false
+            debug=`sed -i "s/'installed' => true/'installed' => false/" config/config.php`
+            if [[ $? -ge "1" ]]
+            then
+                echo "ERREUR"
+                echo $debug
+                exit
+            else
+                echo "OK"
+            fi
+        fi
+
+        cd "$current_folder"
         printf "Launch tests setup\n"
         /bin/bash "./tests/test-setup.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
-            # Cmd fail
-            echo "FAIL"
+            echo "ERREUR"
             echo $debug
             exit
         else
-            # Cmd OK
             echo "OK"
         fi
 
@@ -433,12 +564,10 @@ apacheGID="apache"
         /bin/bash "./tests/test-run.sh" "$output_folder" "$appToTest"
         if [[ $? -ge "1" ]]
         then
-            # Cmd fail
-            echo "FAIL"
+            echo "ERREUR"
             echo $debug
             exit
         else
-            # Cmd OK
             echo "OK"
         fi
     fi
