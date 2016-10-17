@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DEBUG="On" # DEBUG="On" if you want to display DEBUG messages
+# DEBUG="On" if you want to display DEBUG messages
+DEBUG="On"
 
 # UID et GID du serveur web
 apacheUID="apache"
@@ -15,8 +16,12 @@ NODE_BIN=node
 NPM_BIN=npm
 SUDO_BIN=/usr/bin/sudo
 TAR_BIN=/usr/bin/tar
+MYSQL_BIN=/usr/bin/mysql
 
-# conf
+# Load conf parameters
+source ./mycore_build_settings.conf
+
+# PHP modules
 needed_php_modules="bz2 ctype curl date dom exif fileinfo ftp gd iconv intl mbstring pcre PDO pdo_mysql Phar posix readline sqlite3 xml"
 
 #
@@ -28,10 +33,11 @@ function displayHelp {
     echo "Usage : ./mycore_build.sh [-b rewritebase] [-r] [-u UID] [-g GID] <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>"
     echo "Build an instance of owncloud with some apps using a provided configuration file"
     echo ""
-    echo "  -b                (optionnal - default: \"/\") the owncloud instance will be accessible via /rewritebase/ url"
     echo "  -r                (optionnal) mode RETRY, do not download already downloaded sources (verify presence of directory)"
     echo "  -u UID            (optionnal - default: \"apache\") user id used for the files"
     echo "  -g GID            (optionnal - default: \"apache\") user id used for the files"
+    echo "  -b                (optionnal - default: \"/\") the owncloud instance will be accessible via /rewritebase url"
+    echo "  -d                (required for PRODUCTION or DEV) Database name that will be created for the owncloud instance to use"
     echo "  <conf_file>       (required) name of the configuration file (that sets the sources repositories)"
     echo "  <output_folder>   (required) name of the directory the owncloud instance will be built"
     echo "  PRODUCTION        production build, there will be no .git subdir, only the required files for owncloud"
@@ -41,6 +47,13 @@ function displayHelp {
 }
 
 function displayMsg {
+    if [[ $# -lt 2 ]]
+    then
+        echo -e "[\e[31mFATAL\e[0m]" "incorrect use of displayMsg function which needs at least two parameters.. "
+        echo "Please contact the script author with this information: " $(caller)
+        exit
+    fi
+
     level=$1
     shift
     msg=$*
@@ -63,15 +76,47 @@ function displayMsg {
     esac
 }
 
+function manageError {
+    if [[ ! $# -eq "5" ]]
+    then
+        echo -e "[\e[31mFATAL\e[0m]" "incorrect use of manageError function which needs exactly 5 parameters ($# given). "
+        echo "Please contact the script author with this information: " $(caller)
+        exit
+    fi
+
+    errorCode=$1
+    failMsg=$2
+    showHelp=$3
+    exitOnError=$4
+    successMsg=$5
+
+    if [[ ${errorCode} -ge "1" ]]
+    then
+        displayMsg "ERROR" $failMsg
+
+        if [[ ${showHelp} -eq "1" ]]
+        then
+            displayHelp
+        fi
+
+        if [[ ${exitOnError} -eq "1" ]]
+        then
+            exit 1
+        fi
+    else
+        displayMsg "INFO" ${successMsg}
+    fi
+}
+
 #
 # Récupération des options
 #
 RETRY=0
 OPTIND=1
-while getopts ":bru:g:" opt; do
+while getopts ":b:ru:g:d:" opt; do
     case $opt in
         b)
-            displayMSG "INFO" "RewriteBase " ${OPTARG}
+            displayMsg "INFO" "RewriteBase: " ${OPTARG}
             RewriteBase=${OPTARG}
             ;;
         r)
@@ -84,8 +129,12 @@ while getopts ":bru:g:" opt; do
         g)
             apacheGID=${OPTARG}
             ;;
+        d)
+            displayMsg "INFO" "Database name: ${OPTARG}"
+            DATABASE_NAME=${OPTARG}
+            ;;
         ?)
-            displayMsg "ERROR" "Invalid option :" ${OPTARG}
+            displayMsg "ERROR" "Invalid option: " ${OPTARG}
             displayHelp
             ;;
     esac
@@ -111,7 +160,6 @@ shift $((OPTIND - 1))
 #
 # Checks paramètres
 #
-
     displayMsg "INFO" "Server uid" ${apacheUID} "and gid" ${apacheGID}
 
     # Verif dossier destination
@@ -128,9 +176,9 @@ shift $((OPTIND - 1))
     # On empeche d'ecraser un build precedent
     if [[ -d ${output_folder} && ! ${RETRY} -eq 1 ]]
     then
-        displayMsg "ERROR" "The directory ${output_folder} already exist!"
+        displayMsg "ERROR" "The directory ${output_folder} already exist! Maybe you want to use -r (RETRY) mode ?"
         displayHelp
-        exit
+        exit 1
     fi
 
     # Verif dossier destination
@@ -140,61 +188,69 @@ shift $((OPTIND - 1))
          then
             displayMsg "INFO" "Parameters OK"
         else
-            displayMsg "ERROR" "You MUST specify target mode : PRODUCTION, TEST (w/o git/svn dirs),  or DEV (with git/svn dirs)"
+            displayMsg "ERROR" "You MUST specify target mode : PRODUCTION or TEST (w/o git/svn dirs),  or DEV (with git/svn dirs)."
             displayHelp
-            exit
+            exit 1
         fi
     else
         if [[ $environment == "" ]]
         then
-            displayMsg "INFO" "Target mode not provided, set by default to PRODUCTION"
+            displayMsg "INFO" "Target mode not provided, set by default to PRODUCTION."
             environment="PRODUCTION"
         fi
+    fi
+
+    # Dossier data de l'instance, vu qu'on n'utilise pas le data par défaut
+    if [[ ${DATA_DIR} == "" && $environment != "TEST" ]]
+    then
+        displayMsg "ERROR" "DATA_DIR (for owncloud instance) MUST be edited in mycore_build_settings.conf file for ${environment} mode."
+        exit 1
+    else
+        displayMsg "INFO" "DATA_DIR set to ${DATA_DIR}."
+    fi
+
+    # Database
+    if [[ ${DATABASE_NAME} == "" && $environment != "TEST" ]]
+    then
+        displayMsg "ERROR" "The database name MUST be provided (with -d option) for ${environment} mode."
+        exit 1
+    else
+        displayMsg "INFO" "DATABASE_NAME set to ${DATABASE_NAME}."
+    fi
+
+    # Admin user
+    if [[ ${ADMIN_USER} == "" || ${ADMIN_PASS} == "" || ${ADMIN_EMAIL} == "" ]]
+    then
+        displayMsg "ERROR" "Missing some ADMIN info (see mycore_build_settings.conf)."
+        exit 1
+    else
+        displayMsg "INFO" "ADMIN: ${ADMIN_USER} / ${ADMIN_EMAIL} / (password set)."
     fi
 
 #
 # Check des utilitaires nécessaires
 #
+    # cmde=$1 failMsg=$2 showHelp=$3 exitOnError=$4 successMsg=$5
 
     #  wget
     debug=`which wget`
-    if [[ $? -ge "1" ]]
-    then
-        displayMsg "ERROR" "command wget not found. The tool 'wget' MUST be installed."
-        exit
-    else
-        displayMsg "INFO" "command wget found. Ok!"
-    fi
+    manageError $? "command wget not found. The tool 'wget' MUST be installed." 0 1 "command wget found. Ok!"
 
     #  sudo
     debug=`which sudo`
-    if [[ $? -ge "1" ]]
-    then
-        displayMsg "ERROR" "command sudo not found. The tool 'sudo' MUST be installed (and configured)."
-        exit
-    else
-        displayMsg "INFO" "command sudo found. Ok!"
-    fi
+    manageError $? "command sudo not found. The tool 'sudo' MUST be installed (and configured)." 0 1 "command sudo found. Ok!"
 
     #  make
     debug=`which make`
-    if [[ $? -ge "1" ]]
-    then
-        displayMsg "ERROR" "command make not found. The tool 'make' MUST be installed."
-        exit
-    else
-        displayMsg "INFO" "command make found. Ok!"
-    fi
+    manageError $? "command make not found. The tool 'make' MUST be installed." 0 1 "command make found. Ok!"
 
     #  PHP
     debug=`${PHP_BIN} -r 'if (PHP_MAJOR_VERSION > 5 OR ( PHP_MAJOR_VERSION == 5 AND PHP_MINOR_VERSION >= 6 )) { exit(0); } else { exit(1); }'`
-    if [[ $? -ge "1" ]]
-    then
-        displayMsg "ERROR" "PHP not found or obsolete version. The minimal version of PHP is PHP 5.6. Please set PHP binary path at top of this script."
-        exit
-    else
-        displayMsg "INFO" "command PHP found and correct version. Ok!"
-    fi
+    manageError $? \
+        "PHP not found or obsolete version. The minimal version of PHP is PHP 5.6. Please set PHP binary path at top of this script." \
+        0 \
+        1 \
+        "command PHP found and correct version. Ok!"
 
     #  PHP modules
     is_missing_module=0
@@ -215,17 +271,27 @@ shift $((OPTIND - 1))
     if [[ ! ${is_missing_module} -eq 0 ]]
     then
         displayMsg "ERROR" "Some PHP modules are missing: ${missing_modules}, please install them."
-        exit
+        exit 1
     fi
 
     # nodejs
-    debug=`${NODE_BIN} -v 2&>/dev/null`
-    if [ $? -ge "1" ]
+    debug=`${NODE_BIN} -v &>/dev/null`
+    manageError $? "command nodejs not found. Please install nodejs (https://github.com/creationix/nvm)." 0 1 "command nodejs found. Ok!"
+
+    # mysql command, not needed for test environnement
+    if [[ $environment != "TEST" ]]
     then
-        displayMsg "ERROR" "command nodejs not found. Please install nodejs (https://github.com/creationix/nvm)."
-        exit
-    else
-        displayMsg "INFO" "command nodejs found. Ok!"
+        debug=`${MYSQL_BIN} --version &>/dev/null`
+        manageError $? "command mysql not found. Please be sure to correctly edit mysql path at top of this script." 0 1 "command mysql found. OK!"
+
+        # test connection and database presence
+        displayMsg "DEBUG" "${MYSQL_BIN} -h ${DATABASE_HOST} -u ${DATABASE_USER} -p${DATABASE_PASS} -e \"select version();\" &>/dev/null"
+        debug=`${MYSQL_BIN} -h ${DATABASE_HOST} -u ${DATABASE_USER} -p${DATABASE_PASS} -e "select version();" &>/dev/null`
+        manageError $? "can't connect to database." 0 1 "can connect to database. Ok!"
+
+        displayMsg "DEBUG" "${MYSQL_BIN} -h ${DATABASE_HOST} -u ${DATABASE_USER} -p${DATABASE_PASS} ${DATABASE_NAME} -e \"show tables;\" &>/dev/null"
+        debug=`${MYSQL_BIN} -h ${DATABASE_HOST} -u ${DATABASE_USER} -p${DATABASE_PASS} ${DATABASE_NAME} -e "show tables;" &>/dev/null`
+        manageError $? "can't access to database tables." 0 1 "can access to database tables. Ok!"
     fi
 
 #
@@ -255,7 +321,6 @@ shift $((OPTIND - 1))
         if [[ $getSource_location =~ https://github.com/.* ]]
         then
             # clone(=checkout) d'une branche particuliere(=tag)
-
             gitDepth=''
             if [ ${environment} != DEV ]
             then
@@ -264,28 +329,17 @@ shift $((OPTIND - 1))
 
             displayMsg "INFO" "getSource github > $getSource_target ... "
             debug=`/usr/bin/git clone --branch $getSource_tag ${gitDepth} $getSource_location $getSource_target 2>&1`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR"
-                displayMsg $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
 
             # On check si il y a des submodules a process
             if [[ -e $getSource_target/.gitmodules ]]
             then
                 displayMsg "INFO" "updateSubmodules > $getSource_target ... "
                 cd $getSource_target
+
                 debug=`/usr/bin/git submodule update --recursive --init 2>&1`
-                if [[ $? -ge "1" ]]
-                then
-                    displayMsg "ERROR" $debug
-                    exit
-                else
-                    displayMsg "INFO" "OK"
-                fi
+                manageError $? "${debug}" 0 1 "OK"
+
                 cd "$current_folder"
             fi
 
@@ -296,13 +350,7 @@ shift $((OPTIND - 1))
                 cd ${getSource_target}
                 pwd
                 debug=`git filter-branch --prune-empty --subdirectory-filter ${conf_item_subdir} HEAD`
-                if [[ $? -ge "1" ]]
-                then
-                    displayMsg "ERROR" $debug
-                    exit
-                else
-                    displayMsg "INFO" "OK"
-                fi
+                manageError $? "${debug}" 0 1 "OK"
                 cd "$current_folder"
             fi
 
@@ -311,13 +359,7 @@ shift $((OPTIND - 1))
                 # On supprime les metadatas de github
                 displayMsg "INFO" "removeGit $getSource_target/.git* ... "
                 debug=`/bin/rm -rf $getSource_target/.git* 2>&1`
-                if [[ $? -ge "1" ]]
-                then
-                    displayMsg "ERROR" $debug
-                    exit
-                else
-                    displayMsg "INFO" "OK"
-                fi
+                manageError $? "${debug}" 0 1 "OK"
             fi
 
         fi
@@ -329,35 +371,17 @@ shift $((OPTIND - 1))
             # On télécharge l'archive de l'app
             displayMsg "INFO" "getSource apps.owncloud.com > $getSource_target ... "
             debug=`/usr/bin/wget -x $getSource_location -O $getSource_target 2>&1`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR" $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
 
             # On decompresse le tar
             displayMsg "INFO" "unTar $getSource_target ... "
             debug=`/bin/tar zxvf $getSource_target -C $output_folder/apps/ 2>&1`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR" $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
 
             # On supprime l'archive une fois decompresse
             displayMsg "INFO" "remove tar $getSource_target ... "
             debug=`/bin/rm $getSource_target 2>&1`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR" $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
         fi
 
         # Location : SVN
@@ -367,26 +391,14 @@ shift $((OPTIND - 1))
             # On télécharge l'archive de l'app
             displayMsg "INFO" "DL $getSource_target ... "
             debug=`/usr/bin/svn checkout $getSource_location $getSource_target 2>&1`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR" $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
 
             if [[ $environment != "DEV" ]]
             then
                 # On supprime les metadatas de svn
                 displayMsg "INFO" "removeSvn $getSource_target/.svn* ... "
                 debug=`/bin/rm -rf $getSource_target/.svn* 2>&1`
-                if [[ $? -ge "1" ]]
-                then
-                    displayMsg "ERROR" $debug
-                    exit
-                else
-                    displayMsg "INFO" "OK"
-                fi
+                manageError $? "${debug}" 0 1 "OK"
             fi
         fi
 
@@ -397,13 +409,7 @@ shift $((OPTIND - 1))
             # On télécharge l'archive de l'app
             displayMsg "INFO" "DL $getSource_target ... "
             debug=`cp -pr $getSource_location $getSource_target 2>&1`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR" $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
         fi
     }
 
@@ -411,13 +417,15 @@ shift $((OPTIND - 1))
 # Traitement items
 #
     # Init des repertoires (a cause de wget ..)
-    #mkdir -p $output_folder/apps $output_folder/conf $output_folder/themes
+    # mkdir -p $output_folder/apps $output_folder/conf $output_folder/themes
 
     # Traitement des items
     # Pour chaque ligne du fichier de conf
     displayMsg "INFO" "Downloading files"
     for conf_item in `cat "$conf_file"`
     do
+        displayMsg "DEBUG" "processing (for download): ${conf_item}"
+
         cd "$current_folder"
         conf_item_type=`echo $conf_item | cut -d "$conf_delimiter" -f 1`
         conf_item_location=`echo $conf_item | cut -d "$conf_delimiter" -f 2`
@@ -496,57 +504,45 @@ shift $((OPTIND - 1))
     # Fin for conf_item
     done
 
+#
+# Build phase
+#
     # If RETRY mode, then reset the access rights (to get "make" work)
     if [[ ${RETRY} -eq 1 && -d ${output_folder} ]]
     then
         displayMsg "INFO" "Give current user the access rights to ${output_folder} (needed by BUILD step)"
         debug=`${SUDO_BIN} /bin/chown ${USER} "$output_folder" -R 2>&1`
-        if [[ $? -ge "1" ]]
-        then
-            displayMsg "ERROR" $debug
-            exit
-        else
-            displayMsg "INFO" "OK"
-        fi
+        manageError $? "${debug}" 0 1 "OK"
     fi
 
     # Lancer la commande de build (le makefile)
     cd "$output_folder"
-    if [[ ${USER} == 'root' ]]
+    if [[ ${USER} == 'root' ]] # maybe not the best test...
     then
         displayMsg "INFO" "Running as root, so I change the owncloud Makefile to allow use of bower in root mode"
-        debug=`sed -ie "s/\(\\\$(BOWER) \(install\|update\)\)/\1 --allow-root/" Makefile`
-        if [[ $? -ge "1" ]]; then
-            displayMsg "ERROR" $debug
-            exit
-        else
-            displayMsg "INFO" "OK"
-        fi
+        debug=`sed -i -e "s/\(\\\$(BOWER) \(install\|update\)\)/\1 --allow-root/" Makefile`
+        manageError $? "${debug}" 0 1 "OK"
     fi
     displayMsg "INFO" "MAKE in $output_folder ... "
     debug=`make`
-    if [[ $? -ge "1" ]]
-    then
-        displayMsg "ERROR" $debug
-        exit
-    else
-        displayMsg "INFO" "OK"
-    fi
+    manageError $? "${debug}" 0 1 "Make build OK"
 
     # En mode DEV ou PRODUCTION
     if [[ $environment != "TEST" ]]
     then
+        # creation du DATA_DIR si nécessaire
+        if [[ ! -d ${DATA_DIR} ]]
+        then
+            displayMsg "INFO" "Creating DATA_DIR directory..."
+            debug=`mkdir ${DATA_DIR}`
+            manageError $? "Can't create DATA_DIR directory." 0 1 "OK"
+        fi
+
         # On positionne les droits sur les fichiers
         cd "$current_folder"
         displayMsg "INFO" "CHOWN ${apacheUID} sur $output_folder ... "
         debug=`${SUDO_BIN} /bin/chown ${apacheUID}:${apacheGID} "$output_folder" -R 2>&1`
-        if [[ $? -ge "1" ]]
-        then
-            displayMsg "ERROR" $debug
-            exit
-        else
-            displayMsg "INFO" "OK"
-        fi
+        manageError $? "${debug}" 0 1 "OK"
 
         # On passe le .htaccess en .htaccess.sample
         cd "$current_folder"
@@ -554,45 +550,79 @@ shift $((OPTIND - 1))
         then
             displayMsg "INFO" "Renommage du htaccess ... "
             debug=`${SUDO_BIN} /bin/mv "$output_folder/.htaccess" "$output_folder/.htaccess.sample" 2>&1`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR" $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
         fi
 
-        # On genere l'archive contenant le build
-        cd "$current_folder"
-
-        if [[ -f ${output_folder}-full.tar.gz ]]
-        then
-            if [[ ${RETRY} -eq 1 ]]
-            then
-                debug=`rm -f "./${output_folder}-full.tar.gz"`
-                if [[ $? -ge "1" ]]
-                then
-                    displayMsg "ERROR" "impossible de supprimer l'archive ./${output_folder}-full.tar.gz."
-                    displayMsg "ERROR" $debug
-                    exit
-                else
-                    displayMsg "INFO" "Suppression de la précédente archive ${output_folder}-full.tar.gz."
-                fi
-            else
-                displayMsg "ERROR" "Le fichier ${output_folder}-full.tar.gz existe déjà. Supprimez le fichier ou relancer en mode RETRY (option -r)."
-                exit
-            fi
-        fi
-
-        displayMsg "INFO" "TAR vers $output_folder-full.tar.gz ... "
-        debug=`${SUDO_BIN} /bin/tar zcvf ${output_folder}-full.tar.gz "$output_folder" 2>&1`
+        # Install owncloud via occ
+        debug=`grep "'installed' => true" "${output_folder}/config/config.php" &>/dev/null`
         if [[ $? -ge "1" ]]
         then
-            displayMsg "ERROR" $debug
-            exit
+            cd "$output_folder"
+            displayMsg "INFO" "Launching owncloud install via occ ..."
+            displayMsg "DEBUG" "${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ maintenance:install -vvv
+                --database=\"${DATABASE_TYPE}\" --database-name=\"${DATABASE_NAME}\" --database-host=\"${DATABASE_HOST}\"
+                --database-user=\"${DATABASE_USER}\" --database-pass=\"${DATABASE_PASS}\" --database-table-prefix=\"${DATABASE_TABLE_PREFIX}\"
+                --admin-user=\"${ADMIN_USER}\" --admin-pass=\"${ADMIN_PASS}\" --data-dir=\"${DATA_DIR}\""
+            debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ maintenance:install -vvv \
+                --database="${DATABASE_TYPE}" --database-name="${DATABASE_NAME}" --database-host="${DATABASE_HOST}" \
+                --database-user="${DATABASE_USER}" --database-pass="${DATABASE_PASS}" --database-table-prefix="${DATABASE_TABLE_PREFIX}" \
+                --admin-user="${ADMIN_USER}" --admin-pass="${ADMIN_PASS}" --data-dir="${DATA_DIR}" 2>&1`
+            manageError $? "ownCloud install failed: ${debug}" 0 1 "ownCloud install successfully done."
         else
-            displayMsg "INFO" "OK"
+            displayMsg "INFO" "owncloud already \"installed\", going next step."
+        fi
+
+        # Prepare the htaccess
+        debug=`grep "htaccess.RewriteBase" "${output_folder}/config/config.php"`
+        if [[ $? -ge "1" ]]
+        then
+            displayMsg "INFO" "Preparing htaccess..."
+            debug=`sed -i -e "s#\(.*dbpassword.*\)#\1\n  'htaccess.RewriteBase' => \"${RewriteBase}\",#" "${output_folder}/config/config.php" 2>&1`
+            manageError $? "${debug}" 0 1 "OK"
+        fi
+
+        # Update the htaccess
+        displayMsg "INFO" "Updating htaccess"
+        cd "$output_folder"
+        debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ maintenance:update:htaccess 2>&1`
+        manageError $? "${debug}" 0 1 "OK"
+
+        # ############ SPECIFIC ###############
+
+        if [[ ! ${SPECIFIC_SHELL} -eq "" ]]
+        then
+            source "${SPECIFIC_SHELL}"
+        fi
+
+        # ############ END SPECIFIC ###############
+
+        # On genere l'archive tgz contenant le build final
+        cd "$current_folder"
+
+        if [[ $environment == "PRODUCTION" ]]
+        then
+            if [[ -f ${output_folder}-full.tar.gz ]]
+            then
+                if [[ ${RETRY} -eq 1 ]]
+                then
+                    debug=`rm -f "./${output_folder}-full.tar.gz"`
+                    if [[ $? -ge "1" ]]
+                    then
+                        displayMsg "ERROR" "impossible de supprimer l'archive ./${output_folder}-full.tar.gz."
+                        displayMsg "ERROR" $debug
+                        exit
+                    else
+                        displayMsg "INFO" "Suppression de la précédente archive ${output_folder}-full.tar.gz."
+                    fi
+                else
+                    displayMsg "ERROR" "Le fichier ${output_folder}-full.tar.gz existe déjà. Supprimez le fichier ou relancer en mode RETRY (option -r)."
+                    exit
+                fi
+            fi
+
+            displayMsg "INFO" "TAR vers $output_folder-full.tar.gz ... "
+            debug=`${SUDO_BIN} /bin/tar zcvf ${output_folder}-full.tar.gz "$output_folder" 2>&1`
+            manageError $? "${debug}" 0 1 "OK"
         fi
     # En mode TEST
     else
@@ -602,36 +632,18 @@ shift $((OPTIND - 1))
         then
             # in config.php, set 'installed' => false
             debug=`sed -i "s/'installed' => true/'installed' => false/" config/config.php`
-            if [[ $? -ge "1" ]]
-            then
-                displayMsg "ERROR" $debug
-                exit
-            else
-                displayMsg "INFO" "OK"
-            fi
+            manageError $? "${debug}" 0 1 "OK"
         fi
 
         cd "$current_folder"
         displayMsg "INFO" "Launch tests setup\n"
         /bin/bash "./tests/test-setup.sh" "$output_folder" "$appToTest"
-        if [[ $? -ge "1" ]]
-        then
-            displayMsg "ERROR" $debug
-            exit
-        else
-            displayMsg "INFO" "OK"
-        fi
+        manageError $? "setup script failed." 0 1 "end of setup script"
 
         # TEST run
         displayMsg "INFO" "Run tests\n"
         /bin/bash "./tests/test-run.sh" "$output_folder" "$appToTest"
-        if [[ $? -ge "1" ]]
-        then
-            displayMsg "ERROR" $debug
-            exit
-        else
-            displayMsg "INFO" "OK"
-        fi
+        manageError $? "test script failed." 0 1 "end of test script"
     fi
 
 displayMsg "INFO" "========= THE END ========="

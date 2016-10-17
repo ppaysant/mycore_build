@@ -1,0 +1,21 @@
+# URL (without ending slash)
+baseURL="htp://yourdomain.tld"
+
+# database settings
+DATABASE_NAME=""
+DATABASE_TYPE="mysql"
+DATABASE_HOST="localhost"
+DATABASE_USER="testowncloud"
+DATABASE_PASS="testowncloud"
+DATABASE_TABLE_PREFIX="oc_"
+
+# My CoRe instance
+ADMIN_USER="mycore"
+ADMIN_PASS="mycore"
+ADMIN_EMAIL="yourmail@yourdomain.tld"
+DATA_DIR="/var/www/mycore/data"
+
+# Specific script
+# You may want to customize your instance, add specific code in a script, set the script name here.
+# Leave it empty if you do not need customization
+SPECIFIC_SHELL=""
