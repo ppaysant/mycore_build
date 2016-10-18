@@ -245,7 +245,7 @@ shift $((OPTIND - 1))
     manageError $? "command make not found. The tool 'make' MUST be installed." 0 1 "command make found. Ok!"
 
     #  PHP
-    debug=`${PHP_BIN} -r 'if (PHP_MAJOR_VERSION > 5 OR ( PHP_MAJOR_VERSION == 5 AND PHP_MINOR_VERSION >= 6 )) { exit(0); } else { exit(1); }'`
+    debug=`${PHP_BIN} -r 'if (version_compare(PHP_VERSION, "5.6.0", ">=")) { exit(0); } else { exit(1); }'`
     manageError $? \
         "PHP not found or obsolete version. The minimal version of PHP is PHP 5.6. Please set PHP binary path at top of this script." \
         0 \
