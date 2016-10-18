@@ -6,6 +6,7 @@ DEBUG="On"
 # UID et GID du serveur web
 apacheUID="apache"
 apacheGID="apache"
+DATA_DIR=""
 
 # RewriteBase
 RewriteBase="/"
@@ -30,14 +31,15 @@ needed_php_modules="bz2 ctype curl date dom exif fileinfo ftp gd iconv intl mbst
 
 # Display help
 function displayHelp {
-    echo "Usage : ./mycore_build.sh [-b rewritebase] [-r] [-u UID] [-g GID] <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>"
+    echo "Usage : ./mycore_build.sh [-b rewritebase] [-r] [-u UID] [-g GID] -d <datadirectory> -n <databasename> <conf_file> <output_folder> <[{PRODUCTION|DEV|TEST [app]}]>"
     echo "Build an instance of owncloud with some apps using a provided configuration file"
     echo ""
     echo "  -r                (optionnal) mode RETRY, do not download already downloaded sources (verify presence of directory)"
     echo "  -u UID            (optionnal - default: \"apache\") user id used for the files"
     echo "  -g GID            (optionnal - default: \"apache\") user id used for the files"
     echo "  -b                (optionnal - default: \"/\") the owncloud instance will be accessible via /rewritebase url"
-    echo "  -d                (required for PRODUCTION or DEV) Database name that will be created for the owncloud instance to use"
+    echo "  -d                (required for PRODUCTION or DEV) Data directory that will be created for the owncloud instance to use"
+    echo "  -n                (required for PRODUCTION or DEV) Database name that will be created for the owncloud instance to use"
     echo "  <conf_file>       (required) name of the configuration file (that sets the sources repositories)"
     echo "  <output_folder>   (required) name of the directory the owncloud instance will be built"
     echo "  PRODUCTION        production build, there will be no .git subdir, only the required files for owncloud"
@@ -113,7 +115,7 @@ function manageError {
 #
 RETRY=0
 OPTIND=1
-while getopts ":b:ru:g:d:" opt; do
+while getopts ":b:ru:g:n:d:" opt; do
     case $opt in
         b)
             displayMsg "INFO" "RewriteBase: " ${OPTARG}
@@ -129,9 +131,13 @@ while getopts ":b:ru:g:d:" opt; do
         g)
             apacheGID=${OPTARG}
             ;;
-        d)
+        n)
             displayMsg "INFO" "Database name: ${OPTARG}"
             DATABASE_NAME=${OPTARG}
+            ;;
+        d)
+            displayMsg "INFO" "Data directory name: ${OPTARG}"
+            DATA_DIR=${OPTARG}
             ;;
         ?)
             displayMsg "ERROR" "Invalid option: " ${OPTARG}
@@ -203,7 +209,7 @@ shift $((OPTIND - 1))
     # Dossier data de l'instance, vu qu'on n'utilise pas le data par défaut
     if [[ ${DATA_DIR} == "" && $environment != "TEST" ]]
     then
-        displayMsg "ERROR" "DATA_DIR (for owncloud instance) MUST be edited in mycore_build_settings.conf file for ${environment} mode."
+        displayMsg "ERROR" "DATA_DIR (for owncloud instance) MUST be provided (with -d option) for ${environment} mode."
         exit 1
     else
         displayMsg "INFO" "DATA_DIR set to ${DATA_DIR}."
@@ -212,7 +218,7 @@ shift $((OPTIND - 1))
     # Database
     if [[ ${DATABASE_NAME} == "" && $environment != "TEST" ]]
     then
-        displayMsg "ERROR" "The database name MUST be provided (with -d option) for ${environment} mode."
+        displayMsg "ERROR" "The database name MUST be provided (with -n option) for ${environment} mode."
         exit 1
     else
         displayMsg "INFO" "DATABASE_NAME set to ${DATABASE_NAME}."
