@@ -1,5 +1,5 @@
 # URL (without ending slash)
-baseURL="htp://yourdomain.tld"
+baseURL="http://yourdomain.tld"
 
 # database settings
 DATABASE_NAME=""

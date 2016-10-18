@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # DEBUG="On" if you want to display DEBUG messages
-DEBUG="On"
+DEBUG="Off"
 
 # UID et GID du serveur web
 apacheUID="apache"
@@ -600,12 +600,16 @@ shift $((OPTIND - 1))
 
         # Set the trusted domain
         displayMsg "INFO" "Add ${baseURL} to the trusted domains"
-        debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set trusted_domains 0 --value="${baseURL}" 2>&1`
+
+        # suppress protocol from baseUrl
+        domainBaseUrl=`echo ${baseURL} | sed -e "s#\(http://\|https://\)##"`
+
+        debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set trusted_domains 0 --value="${domainBaseUrl}" 2>&1`
         manageError $? "${debug}" 0 1 "OK"
 
         # ############ SPECIFIC ###############
 
-        if [[ ! "${SPECIFIC_SHELL}" -eq "" ]]
+        if [[ ! "${SPECIFIC_SHELL}" == "" ]]
         then
             cd "${current_folder}"
             source "${SPECIFIC_SHELL}"
