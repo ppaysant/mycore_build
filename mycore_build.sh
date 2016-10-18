@@ -605,8 +605,9 @@ shift $((OPTIND - 1))
 
         # ############ SPECIFIC ###############
 
-        if [[ ! ${SPECIFIC_SHELL} -eq "" ]]
+        if [[ ! "${SPECIFIC_SHELL}" -eq "" ]]
         then
+            cd "${current_folder}"
             source "${SPECIFIC_SHELL}"
         fi
 
