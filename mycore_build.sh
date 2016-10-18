@@ -542,6 +542,11 @@ shift $((OPTIND - 1))
             displayMsg "INFO" "Creating DATA_DIR directory..."
             debug=`mkdir ${DATA_DIR}`
             manageError $? "Can't create DATA_DIR directory." 0 1 "OK"
+
+            # On positionne les droits sur ce répertoire
+            displayMsg "INFO" "CHOWN ${apacheUID} sur ${DATA_DIR} ... "
+            debug=`${SUDO_BIN} /bin/chown ${apacheUID}:${apacheGID} "${DATA_DIR}" -R 2>&1`
+            manageError $? "${debug}" 0 1 "OK"
         fi
 
         # On positionne les droits sur les fichiers
