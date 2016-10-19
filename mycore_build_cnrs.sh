@@ -49,9 +49,14 @@ END`
     debug=`sed -i "s#wayf_URL = \".*\"#wayf_URL = \"${baseURL}${RewriteBase}/wayf/index.php\"#" ${output_folder}/wayf/js/embeddedWAYF.js 2>&1`
     manageError $? "${debug}" 0 1 "OK"
 
-    # Adapt wayf embeddedWAYF.js to declared SP
-    displayMsg "INFO" "Adapt wayf embeddedWAYF.js to declared SP"
+    # Adapt wayf embeddedWAYF.js to declared SP ID
+    displayMsg "INFO" "Adapt wayf embeddedWAYF.js to declared SP ID"
     debug=`sed -i "s#wayf_sp_entityID = \".*\"#wayf_sp_entityID = \"${baseURL}\"#" ${output_folder}/wayf/js/embeddedWAYF.js 2>&1`
+    manageError $? "${debug}" 0 1 "OK"
+
+    # Adapt wayf embeddedWAYF.js to SP url
+    displayMsg "INFO" "Adapt wayf embeddedWAYF.js to SP url"
+    debug=`sed -i "s#wayf_sp_handlerURL = \".*\"#wayf_sp_handlerURL = \"${baseURL}/Shibboleth.sso\"#" ${output_folder}/wayf/js/embeddedWAYF.js 2>&1`
     manageError $? "${debug}" 0 1 "OK"
 
     # Adapt wayf embeddedWAYF.js return URL
