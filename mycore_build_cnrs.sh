@@ -91,7 +91,7 @@ manageError $? "${debug}" 0 1 "OK"
 
 # user_account_action backup_file_dir parameter (in config.php)
 displayMsg "INFO" "App user_account_action, backup_file_dir parameter (in config.php)"
-debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set "backup_file_dir" --value="${output_folder}/${RewriteBase}/data_backup" 2>&1`
+debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set "backup_file_dir" --value="${output_folder}/data_backup" 2>&1`
 manageError $? "${debug}" 0 1 "OK"
 
 ## TODO: manage_instance ligne 351 et suivantes (mail)
@@ -102,29 +102,13 @@ debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ user:setting --value="${ADMI
 manageError $? "${debug}" 0 1 "OK"
 
 # Add or modify custom_adminemail in config.php
-debug=`grep "custom_adminemail" "${output_folder}/config/config.php"`
-if [[ $? -ge "1" ]]
-then
-    displayMsg "INFO" "Add admin email in config.php"
-    debug=`sed -i -e "s#\(.*dbpassword.*\)#\1\n  'custom_adminemail' => '${ADMIN_EMAIL}',#" "${output_folder}/config/config.php" 2>&1`
-    manageError $? "${debug}" 0 1 "OK"
-else
-    displayMsg "INFO" "Modify admin email in config.php"
-    debug=`sed -i -e "s#'custom_adminemail' => .*#'custom_adminemail' => '${ADMIN_EMAIL}',#" "${output_folder}/config/config.php" 2>&1`
-    manageError $? "${debug}" 0 1 "OK"
-fi
+displayMsg "INFO" "Updating admin email in config.php..."
+debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set "custom_adminemail" --value="${ADMIN_EMAIL}" 2>&1`
+manageError $? "${debug}" 0 1 "OK"
 
 # Add or modify monitoring_admin_email in config.php
-debug=`grep "monitoring_admin_email" "${output_folder}/config/config.php"`
-if [[ $? -ge "1" ]]
-then
-    displayMsg "INFO" "Add monitoring admin email in config.php"
-    debug=`sed -i -e "s#\(.*dbpassword.*\)#\1\n  'monitoring_admin_email' => '${ADMIN_EMAIL}',#" "${output_folder}/config/config.php" 2>&1`
-    manageError $? "${debug}" 0 1 "OK"
-else
-    displayMsg "INFO" "Modify monitoring admin email in config.php"
-    debug=`sed -i -e "s#'monitoring_admin_email' => .*#'monitoring_admin_email' => '${ADMIN_EMAIL}',#" "${output_folder}/config/config.php" 2>&1`
-    manageError $? "${debug}" 0 1 "OK"
-fi
+displayMsg "INFO" "Add monitoring admin email in config.php"
+debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set "monitoring_admin_email" --value="${ADMIN_EMAIL}" 2>&1`
+manageError $? "${debug}" 0 1 "OK"
 
 # ############ END SPECIFIC CNRS ###############

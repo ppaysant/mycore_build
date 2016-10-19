@@ -583,26 +583,23 @@ shift $((OPTIND - 1))
             displayMsg "INFO" "owncloud already \"installed\", going next step."
         fi
 
+        cd "$output_folder"
+
         # Prepare the htaccess
-        debug=`grep "htaccess.RewriteBase" "${output_folder}/config/config.php"`
-        if [[ $? -ge "1" ]]
-        then
-            displayMsg "INFO" "Preparing htaccess..."
-            debug=`sed -i -e "s#\(.*dbpassword.*\)#\1\n  'htaccess.RewriteBase' => \"${RewriteBase}\",#" "${output_folder}/config/config.php" 2>&1`
-            manageError $? "${debug}" 0 1 "OK"
-        fi
+        displayMsg "INFO" "Updating htaccess.RewriteBase in config.php ..."
+        debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set htaccess.RewriteBase --value="${RewriteBase}" 2>&1`
+        manageError $? "${debug}" 0 1 "OK"
 
         # Update the htaccess
         displayMsg "INFO" "Updating htaccess"
-        cd "$output_folder"
         debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ maintenance:update:htaccess 2>&1`
         manageError $? "${debug}" 0 1 "OK"
 
         # Set the trusted domain
         displayMsg "INFO" "Add ${baseURL} to the trusted domains"
 
-        # suppress protocol from baseUrl
-        domainBaseUrl=`echo ${baseURL} | sed -e "s#\(http://\|https://\)##"`
+            # suppress protocol from baseUrl
+            domainBaseUrl=`echo ${baseURL} | sed -e "s#\(http://\|https://\)##"`
 
         debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set trusted_domains 0 --value="${domainBaseUrl}" 2>&1`
         manageError $? "${debug}" 0 1 "OK"
