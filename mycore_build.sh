@@ -595,6 +595,11 @@ shift $((OPTIND - 1))
         debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ maintenance:update:htaccess 2>&1`
         manageError $? "${debug}" 0 1 "OK"
 
+        # Ensure the httpd rewriting url engine is active
+        displayMsg "INFO" "Ensure the httpd rewriting url engine is active..."
+        debug=`sed -i -e "s/\(mod_rewrite.c>\)/\1\n  RewriteEngine on/" ${output_folder}/.htaccess`
+        manageError $? "${debug}" 0 1 "OK"
+
         # Set the trusted domain
         displayMsg "INFO" "Add ${baseURL} to the trusted domains"
 
