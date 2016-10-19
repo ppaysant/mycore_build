@@ -606,7 +606,7 @@ shift $((OPTIND - 1))
 
         # Update overwrite.cli.url
         displayMsg "INFO" "Updating overwrite.cli.url in config.php ..."
-        debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set --update-only overwrite.cli.url --value="${baseURL}" 2>&1`
+        debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set --update-only overwrite.cli.url --value="${baseURL}${RewriteBase}" 2>&1`
         manageError $? "${debug}" 0 1 "OK"
 
         # ############ SPECIFIC ###############
