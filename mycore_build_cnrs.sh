@@ -10,6 +10,11 @@ then
     manageError $? "${debug}" 0 1 "OK"
 fi
 
+# Do not use default help link
+displayMsg "INFO" "Do not use default help link parameter (in config.php)"
+debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:system:set knowledgebaseenabled --type="boolean" --value=false 2>&1`
+manageError $? "${debug}" 0 1 "OK"
+
 # WAYF config
 if [[ -d "${output_folder}/wayf" ]]
 then
