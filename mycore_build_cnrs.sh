@@ -72,9 +72,14 @@ END`
     # Modifier le template de la page de login
     if [[ -f "${output_folder}/themes/mycore/core/templates/login.php" ]]
     then
-        displayMsg "INFO" "Adapting login template to ${RewriteBase}/"
-        debug=`sed -i -e "s#/wayf/#${RewriteBase}/wayf/#" ${output_folder}/themes/mycore/core/templates/login.php 2>&1`
-        manageError $? "${debug}" 0 1 "OK"
+        # Eviter de modifier le template plusieurs fois...
+        debug=`grep ${RewriteBase} ${output_folder}/themes/mycore/core/templates/login.php 2>&1`
+        if [[ $? -ge "1" ]]
+        then
+            displayMsg "INFO" "Adapting login template to ${RewriteBase}/"
+            debug=`sed -i -e "s#/wayf/#${RewriteBase}/wayf/#" ${output_folder}/themes/mycore/core/templates/login.php 2>&1`
+            manageError $? "${debug}" 0 1 "OK"
+        fi
     fi
 fi
 
