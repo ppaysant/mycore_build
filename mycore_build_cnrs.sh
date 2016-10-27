@@ -87,12 +87,7 @@ fi
 
 # user_serverVars2 configuration, sso_url
 displayMsg "INFO" "App user_servervars2, sso_url parameter"
-debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:app:set user_servervar2 sso_url --value="${baseURL}/Shibboleth.sso/Login?target=${baseURL}${RewriteBase}/?app=usv2" 2>&1`
-manageError $? "${debug}" 0 1 "OK"
-
-# user_serverVars2 configuration, slo_url
-displayMsg "INFO" "App user_servervars2, slo_url parameter"
-debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:app:set user_servervar2 slo_url --value="${baseURL}${RewriteBase}/exit.php?action=logout" 2>&1`
+debug=`${SUDO_BIN} -u ${apacheUID} ${PHP_BIN} ./occ config:app:set user_servervars2 sso_url --value="${baseURL}/Shibboleth.sso/Login?target=${baseURL}${RewriteBase}/?app=usv2" 2>&1`
 manageError $? "${debug}" 0 1 "OK"
 
 # gtu start_url parameter
