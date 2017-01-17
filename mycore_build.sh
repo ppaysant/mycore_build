@@ -207,7 +207,7 @@ shift $((OPTIND - 1))
     fi
 
     # Dossier data de l'instance, vu qu'on n'utilise pas le data par défaut
-    if [[ ${DATA_DIR} == "" && $environment != "TEST" ]]
+    if [[ ${DATA_DIR} == "" && $environment == "DEV" ]]
     then
         displayMsg "ERROR" "DATA_DIR (for owncloud instance) MUST be provided (with -d option) for ${environment} mode."
         exit 1
@@ -216,7 +216,7 @@ shift $((OPTIND - 1))
     fi
 
     # Database
-    if [[ ${DATABASE_NAME} == "" && $environment != "TEST" ]]
+    if [[ ${DATABASE_NAME} == "" && $environment == "DEV" ]]
     then
         displayMsg "ERROR" "The database name MUST be provided (with -n option) for ${environment} mode."
         exit 1
