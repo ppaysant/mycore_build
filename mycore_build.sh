@@ -625,9 +625,11 @@ shift $((OPTIND - 1))
         # ############ END SPECIFIC ###############
 
         cd "$current_folder"
+    fi
 
     # En mode TEST
-    elif [[ $environment == "TEST" ]]
+    if [[ $environment == "TEST" ]]
+    then
         # Remettre l'app en "non installé" si mode RETRY
         cd "${current_folder}/${output_folder}"
         if [[ -w "config/config.php" && ${RETRY} -eq 1 ]]
