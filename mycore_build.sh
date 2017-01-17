@@ -38,12 +38,12 @@ function displayHelp {
     echo "  -u UID            (optionnal - default: \"apache\") user id used for the files"
     echo "  -g GID            (optionnal - default: \"apache\") user id used for the files"
     echo "  -b                (optionnal - default: \"/\") the owncloud instance will be accessible via /rewritebase url"
-    echo "  -d                (required for PRODUCTION or DEV) Data directory that will be created for the owncloud instance to use"
-    echo "  -n                (required for PRODUCTION or DEV) Database name that will be created for the owncloud instance to use"
+    echo "  -d                (required for DEV) Data directory that will be created for the owncloud instance to use"
+    echo "  -n                (required for DEV) Database name that will be created for the owncloud instance to use"
     echo "  <conf_file>       (required) name of the configuration file (that sets the sources repositories)"
     echo "  <output_folder>   (required) name of the directory the owncloud instance will be built"
-    echo "  PRODUCTION        production build, there will be no .git subdir, only the required files for owncloud"
-    echo "  DEV               dev build, will keep .git subdirs"
+    echo "  PRODUCTION        production build, there will be no .git subdir and no configuration, only the required files for owncloud"
+    echo "  DEV               dev build, will keep .git subdirs and set configuration (htaccess, apps, wayf)"
     echo "  TEST              test build, after build, the script will launch phpunit with provided tests (cf tests directory for examples)"
     echo "  TEST <app>        test build, as TEST but will test only one app"
 }
@@ -284,8 +284,8 @@ shift $((OPTIND - 1))
     debug=`${NODE_BIN} -v &>/dev/null`
     manageError $? "command nodejs not found. Please install nodejs (https://github.com/creationix/nvm)." 0 1 "command nodejs found. Ok!"
 
-    # mysql command, not needed for test environnement
-    if [[ $environment != "TEST" ]]
+    # mysql command, not needed for test environnement, nor prod
+    if [[ $environment == "DEV" ]]
     then
         debug=`${MYSQL_BIN} --version &>/dev/null`
         manageError $? "command mysql not found. Please be sure to correctly edit mysql path at top of this script." 0 1 "command mysql found. OK!"
@@ -533,8 +533,8 @@ shift $((OPTIND - 1))
     debug=`make`
     manageError $? "${debug}" 0 1 "Make build OK"
 
-    # En mode DEV ou PRODUCTION
-    if [[ $environment != "TEST" ]]
+    # En mode DEV
+    if [[ $environment == "DEV" ]]
     then
         # creation du DATA_DIR si nécessaire
         if [[ ! -d ${DATA_DIR} ]]
@@ -624,36 +624,10 @@ shift $((OPTIND - 1))
 
         # ############ END SPECIFIC ###############
 
-        # On genere l'archive tgz contenant le build final
         cd "$current_folder"
 
-        if [[ $environment == "PRODUCTION" ]]
-        then
-            if [[ -f ${output_folder}-full.tar.gz ]]
-            then
-                if [[ ${RETRY} -eq 1 ]]
-                then
-                    debug=`rm -f "./${output_folder}-full.tar.gz"`
-                    if [[ $? -ge "1" ]]
-                    then
-                        displayMsg "ERROR" "impossible de supprimer l'archive ./${output_folder}-full.tar.gz."
-                        displayMsg "ERROR" $debug
-                        exit
-                    else
-                        displayMsg "INFO" "Suppression de la précédente archive ${output_folder}-full.tar.gz."
-                    fi
-                else
-                    displayMsg "ERROR" "Le fichier ${output_folder}-full.tar.gz existe déjà. Supprimez le fichier ou relancer en mode RETRY (option -r)."
-                    exit
-                fi
-            fi
-
-            displayMsg "INFO" "TAR vers $output_folder-full.tar.gz ... "
-            debug=`${SUDO_BIN} /bin/tar zcvf ${output_folder}-full.tar.gz "$output_folder" 2>&1`
-            manageError $? "${debug}" 0 1 "OK"
-        fi
     # En mode TEST
-    else
+    elif [[ $environment == "TEST" ]]
         # Remettre l'app en "non installé" si mode RETRY
         cd "${current_folder}/${output_folder}"
         if [[ -w "config/config.php" && ${RETRY} -eq 1 ]]
@@ -672,6 +646,34 @@ shift $((OPTIND - 1))
         displayMsg "INFO" "Run tests\n"
         /bin/bash "./tests/test-run.sh" "$output_folder" "$appToTest"
         manageError $? "test script failed." 0 1 "end of test script"
+    fi
+
+    # On genere l'archive tgz contenant le build final
+    cd "$current_folder"
+    if [[ $environment == "PRODUCTION" ]]
+    then
+        if [[ -f ${output_folder}-full.tar.gz ]]
+        then
+            if [[ ${RETRY} -eq 1 ]]
+            then
+                debug=`rm -f "./${output_folder}-full.tar.gz"`
+                if [[ $? -ge "1" ]]
+                then
+                    displayMsg "ERROR" "impossible de supprimer l'archive ./${output_folder}-full.tar.gz."
+                    displayMsg "ERROR" $debug
+                    exit
+                else
+                    displayMsg "INFO" "Suppression de la précédente archive ${output_folder}-full.tar.gz."
+                fi
+            else
+                displayMsg "ERROR" "Le fichier ${output_folder}-full.tar.gz existe déjà. Supprimez le fichier ou relancer en mode RETRY (option -r)."
+                exit
+            fi
+        fi
+
+        displayMsg "INFO" "TAR vers $output_folder-full.tar.gz ... "
+        debug=`${SUDO_BIN} /bin/tar zcvf ${output_folder}-full.tar.gz "$output_folder" 2>&1`
+        manageError $? "${debug}" 0 1 "OK"
     fi
 
 displayMsg "INFO" "========= THE END ========="
